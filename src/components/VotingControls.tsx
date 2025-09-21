@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useRealTimeVotingStatus, useRealTimeVotes } from '@/hooks/useRealtime'
 import { DatabaseService } from '@/lib/database'
 import { ScoringService } from '@/lib/scoring'
+import { squads } from '@/config/squads'
 
 interface VotingControlsProps {
   onExportExcel: () => void
@@ -197,7 +198,7 @@ export default function VotingControls({ onExportExcel }: VotingControlsProps) {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {votes.slice(0, 10).map((vote) => {
-                    const squadName = require('@/config/squads').squads.find((s: any) => s.id === vote.squad_id)?.name || vote.squad_id
+                    const squadName = squads.find((s) => s.id === vote.squad_id)?.name || vote.squad_id
                     const totalScore = ScoringService.calculateWeightedScore(vote.scores)
                     
                     return (

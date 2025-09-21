@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase, Vote, VotingSettings } from '@/lib/supabase'
+import { supabase, Vote } from '@/lib/supabase'
 import { DatabaseService } from '@/lib/database'
 
 // Hook for real-time votes updates

@@ -2,8 +2,20 @@ import { useState, useEffect } from 'react'
 import { SystemCheck } from '@/lib/system-check'
 
 export default function SystemDiagnostics() {
-  const [healthCheck, setHealthCheck] = useState<any>(null)
-  const [systemStats, setSystemStats] = useState<any>(null)
+  const [healthCheck, setHealthCheck] = useState<{
+    success: boolean;
+    issues: string[];
+    warnings: string[];
+  } | null>(null)
+  const [systemStats, setSystemStats] = useState<{
+    totalSquads: number;
+    totalJudges: number;
+    totalCriteria: number;
+    totalVotes: number;
+    votingStatus: string;
+    totalAccessCodes: number;
+    criteriaWeightTotal: number;
+  } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -64,7 +76,7 @@ export default function SystemDiagnostics() {
               <div className="mb-4">
                 <h5 className="text-sm font-medium text-red-800 mb-2">Problemas Críticos:</h5>
                 <ul className="space-y-1">
-                  {healthCheck.issues.map((issue, index) => (
+                  {healthCheck.issues.map((issue: string, index: number) => (
                     <li key={index} className="text-sm text-red-700 flex items-start">
                       <span className="text-red-500 mr-2">•</span>
                       {issue}
@@ -78,7 +90,7 @@ export default function SystemDiagnostics() {
               <div className="mb-4">
                 <h5 className="text-sm font-medium text-yellow-800 mb-2">Advertencias:</h5>
                 <ul className="space-y-1">
-                  {healthCheck.warnings.map((warning, index) => (
+                  {healthCheck.warnings.map((warning: string, index: number) => (
                     <li key={index} className="text-sm text-yellow-700 flex items-start">
                       <span className="text-yellow-500 mr-2">•</span>
                       {warning}

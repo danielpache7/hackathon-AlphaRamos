@@ -1,5 +1,6 @@
 import { Squad } from '@/config/squads'
 import { Vote } from '@/lib/supabase'
+import { evaluationCriteria } from '@/config/criteria'
 
 interface SquadCardProps {
   squad: Squad
@@ -14,9 +15,8 @@ export default function SquadCard({ squad, hasVoted, vote, onVote, disabled }: S
     if (!vote || !vote.scores) return null
     
     // Calculate total weighted score using criteria weights
-    const { evaluationCriteria } = require('@/config/criteria')
     const totalScore = Object.entries(vote.scores).reduce((sum, [criterionId, score]) => {
-      const criterion = evaluationCriteria.find((c: any) => c.id === criterionId)
+      const criterion = evaluationCriteria.find((c) => c.id === criterionId)
       const weightedScore = criterion ? score * criterion.weight : 0
       return sum + weightedScore
     }, 0)

@@ -12,7 +12,7 @@ export default function ConnectionStatus() {
         const { error } = await supabase.from('settings').select('id').limit(1)
         setIsConnected(!error)
         setLastPing(new Date())
-      } catch (error) {
+      } catch {
         setIsConnected(false)
       }
     }

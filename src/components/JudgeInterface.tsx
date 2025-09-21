@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { User } from '@/lib/auth'
 import { squads, Squad } from '@/config/squads'
 import { useRealTimeJudgeVotes, useRealTimeVotingStatus } from '@/hooks/useRealtime'
-import { DatabaseService } from '@/lib/database'
+
 import SquadCard from './SquadCard'
 import VotingModal from './VotingModal'
 import VotingProgress from './VotingProgress'

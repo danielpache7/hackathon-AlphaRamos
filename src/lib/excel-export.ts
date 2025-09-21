@@ -31,7 +31,7 @@ export class ExcelExportService {
     XLSX.writeFile(workbook, filename)
   }
 
-  private static generateIndividualVotesSheet(votes: Vote[]): any[][] {
+  private static generateIndividualVotesSheet(votes: Vote[]): (string | number)[][] {
     const headers = [
       'Juez',
       'Equipo',
@@ -62,7 +62,7 @@ export class ExcelExportService {
     return [headers, ...rows]
   }
 
-  private static generateRankingsSheet(votes: Vote[]): any[][] {
+  private static generateRankingsSheet(votes: Vote[]): (string | number)[][] {
     const squadScores = ScoringService.calculateSquadScores(votes)
     
     const headers = [
@@ -94,7 +94,7 @@ export class ExcelExportService {
     return [headers, ...rows]
   }
 
-  private static generateJudgeSummarySheet(votes: Vote[]): any[][] {
+  private static generateJudgeSummarySheet(votes: Vote[]): (string | number)[][] {
     const judgeProgress = ScoringService.calculateJudgeProgress(votes)
     
     const headers = [
@@ -148,7 +148,7 @@ export class ExcelExportService {
     XLSX.writeFile(workbook, filename)
   }
 
-  private static generateCriteriaBreakdownSheet(votes: Vote[]): any[][] {
+  private static generateCriteriaBreakdownSheet(votes: Vote[]): (string | number)[][] {
     const squadScores = ScoringService.calculateSquadScores(votes)
     
     const headers = [
@@ -184,7 +184,7 @@ export class ExcelExportService {
     return [headers, ...rows]
   }
 
-  private static generateStatisticsSheet(votes: Vote[]): any[][] {
+  private static generateStatisticsSheet(votes: Vote[]): (string | number)[][] {
     const stats = ScoringService.getOverallStats(votes)
     const squadScores = ScoringService.calculateSquadScores(votes)
     

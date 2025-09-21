@@ -1,4 +1,4 @@
-import { validateAccessCode, AccessCode } from '@/config/access-codes'
+import { validateAccessCode } from '@/config/access-codes'
 
 export interface User {
   name: string

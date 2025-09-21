@@ -6,7 +6,12 @@ export default function RealTimeResults() {
   const { votes, loading, lastRefresh } = useRealTimeVotes()
   const [squadScores, setSquadScores] = useState<SquadScore[]>([])
   const [judgeProgress, setJudgeProgress] = useState<JudgeProgress[]>([])
-  const [overallStats, setOverallStats] = useState<any>(null)
+  const [overallStats, setOverallStats] = useState<{
+    totalVotes: number;
+    completionPercentage: number;
+    completedJudges: number;
+    totalSquads: number;
+  } | null>(null)
 
   useEffect(() => {
     if (votes.length >= 0) {
