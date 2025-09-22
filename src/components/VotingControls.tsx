@@ -4,6 +4,7 @@ import { DatabaseService } from '@/lib/database'
 import { ScoringService } from '@/lib/scoring'
 import { squads } from '@/config/squads'
 import { useToast } from '@/contexts/ToastContext'
+import WinnersDisplay from './WinnersDisplay'
 
 interface VotingControlsProps {
   onExportExcel: () => void
@@ -67,14 +68,12 @@ export default function VotingControls({ onExportExcel }: VotingControlsProps) {
     }
   }
 
-  const getWinners = () => {
+  const getCategoryWinners = () => {
     if (votingStatus !== 'CLOSED' || votes.length === 0) return []
-    
-    const squadScores = ScoringService.calculateSquadScores(votes)
-    return squadScores.slice(0, 3) // Top 3
+    return ScoringService.calculateCategoryRankings(votes)
   }
 
-  const winners = getWinners()
+  const categoryWinners = getCategoryWinners()
 
   if (statusLoading || votesLoading) {
     return (
@@ -135,35 +134,8 @@ export default function VotingControls({ onExportExcel }: VotingControlsProps) {
       </div>
 
       {/* Winners Display (only when voting is closed) */}
-      {votingStatus === 'CLOSED' && winners.length > 0 && (
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/60 rounded-3xl p-8">
-          <h3 className="text-2xl font-light text-slate-900 mb-8 text-center tracking-tight">
-            🏆 Ganadores del Hackathon 🏆
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {winners.map((winner, index) => (
-              <div
-                key={winner.squadId}
-                className={`text-center p-6 rounded-2xl transition-all duration-200 ${
-                  index === 0 ? 'bg-gradient-to-br from-amber-100 to-yellow-100 border-2 border-amber-300 shadow-lg' :
-                  index === 1 ? 'bg-gradient-to-br from-slate-100 to-gray-100 border-2 border-slate-300 shadow-md' :
-                  'bg-gradient-to-br from-orange-100 to-red-100 border-2 border-orange-300 shadow-md'
-                }`}
-              >
-                <div className="text-5xl mb-4">
-                  {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
-                </div>
-                <div className="font-semibold text-lg text-slate-900 mb-2">{winner.squadName}</div>
-                <div className="text-slate-600 font-medium">
-                  {Math.round(winner.totalScore)} puntos
-                </div>
-                <div className="text-sm text-slate-500 mt-1">
-                  {winner.voteCount} votos
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      {votingStatus === 'CLOSED' && categoryWinners.length > 0 && (
+        <WinnersDisplay categoryRankings={categoryWinners} />
       )}
 
       {/* Vote Management */}

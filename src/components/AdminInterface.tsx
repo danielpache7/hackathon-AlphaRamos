@@ -80,62 +80,64 @@ export default function AdminInterface({ user }: AdminInterfaceProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center space-y-6 lg:space-y-0 mb-8">
-        <div className="flex-1">
-          <h2 className="text-2xl sm:text-3xl font-light text-slate-900 tracking-tight mb-2">
-            Panel de Administración
-          </h2>
-          <p className="text-slate-600 mb-3">
-            Bienvenido {user.name}, monitorea y gestiona el proceso de votación en tiempo real.
-          </p>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 text-sm">
-            <p className="text-slate-400">
-              Última actualización: {lastRefresh.toLocaleTimeString('es-ES')} • Auto-actualización cada minuto
+      <div className="space-y-6 mb-8">
+        <div className="flex flex-col space-y-4">
+          <div className="flex-1">
+            <h2 className="text-2xl sm:text-3xl font-light text-slate-900 tracking-tight mb-2">
+              Panel de Administración
+            </h2>
+            <p className="text-slate-600 mb-3">
+              Bienvenido {user.name}, monitorea y gestiona el proceso de votación en tiempo real.
             </p>
-            <div className="mt-2 sm:mt-0">
-              <ConnectionStatus />
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-6 text-sm">
+              <p className="text-slate-400">
+                Última actualización: {lastRefresh.toLocaleTimeString('es-ES')} • Auto-actualización cada minuto
+              </p>
+              <div>
+                <ConnectionStatus />
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-          <a
-            href="/dashboard"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-6 py-2.5 rounded-xl font-medium transition-all duration-200 bg-blue-600 text-white hover:bg-blue-700 text-center"
-          >
-            Dashboard en Vivo
-          </a>
-          <button
-            onClick={refreshVotes}
-            disabled={loading}
-            className={`px-6 py-2.5 rounded-xl font-medium transition-all duration-200 ${
-              loading
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                : 'bg-slate-900 text-white hover:bg-slate-800'
-            }`}
-          >
-            {loading ? (
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
-                <span>Actualizando...</span>
-              </div>
-            ) : (
-              <>Actualizar</>
-            )}
-          </button>
-          <button
-            onClick={handleExportDetailedReport}
-            disabled={votes.length === 0}
-            className={`px-6 py-2.5 rounded-xl font-medium transition-all duration-200 ${
-              votes.length === 0
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                : 'bg-emerald-600 text-white hover:bg-emerald-700'
-            }`}
-          >
-            Exportar Reporte
-          </button>
+          
+          <div className="flex flex-wrap gap-3">
+            <a
+              href="/dashboard"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 sm:px-6 py-2.5 rounded-xl font-medium transition-all duration-200 bg-blue-600 text-white hover:bg-blue-700 text-center text-sm sm:text-base whitespace-nowrap"
+            >
+              Dashboard en Vivo
+            </a>
+            <button
+              onClick={refreshVotes}
+              disabled={loading}
+              className={`px-4 sm:px-6 py-2.5 rounded-xl font-medium transition-all duration-200 text-sm sm:text-base whitespace-nowrap ${
+                loading
+                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  : 'bg-slate-900 text-white hover:bg-slate-800'
+              }`}
+            >
+              {loading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                  <span>Actualizando...</span>
+                </div>
+              ) : (
+                <>Actualizar</>
+              )}
+            </button>
+            <button
+              onClick={handleExportDetailedReport}
+              disabled={votes.length === 0}
+              className={`px-4 sm:px-6 py-2.5 rounded-xl font-medium transition-all duration-200 text-sm sm:text-base whitespace-nowrap ${
+                votes.length === 0
+                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
+              }`}
+            >
+              Exportar Reporte
+            </button>
+          </div>
         </div>
       </div>
 
