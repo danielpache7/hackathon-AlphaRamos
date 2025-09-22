@@ -53,22 +53,22 @@ export default function SystemDiagnostics() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="p-4 border-b">
-        <h3 className="text-lg font-semibold text-gray-900">Diagnóstico del Sistema</h3>
-        <p className="text-sm text-gray-600">Estado de salud y configuración</p>
+    <div className="bg-white rounded-2xl border border-slate-200/60 overflow-hidden">
+      <div className="p-6 border-b border-slate-200/60">
+        <h3 className="text-xl font-semibold text-slate-900 mb-2">System Diagnostics</h3>
+        <p className="text-slate-600">Health status and configuration</p>
       </div>
       
-      <div className="p-4 space-y-6">
+      <div className="p-6 space-y-8">
         {/* Health Status */}
         {healthCheck && (
           <div>
-            <div className="flex items-center space-x-2 mb-3">
+            <div className="flex items-center space-x-3 mb-4">
               <div className={`w-3 h-3 rounded-full ${
-                healthCheck.success ? 'bg-green-500' : 'bg-red-500'
+                healthCheck.success ? 'bg-emerald-500' : 'bg-red-500'
               }`}></div>
-              <h4 className="font-medium text-gray-900">
-                Estado General: {healthCheck.success ? 'Saludable' : 'Con Problemas'}
+              <h4 className="font-semibold text-slate-900">
+                Overall Status: {healthCheck.success ? 'Healthy' : 'Issues Detected'}
               </h4>
             </div>
 
@@ -105,23 +105,23 @@ export default function SystemDiagnostics() {
         {/* System Stats */}
         {systemStats && (
           <div>
-            <h4 className="font-medium text-gray-900 mb-3">Estadísticas del Sistema</h4>
+            <h4 className="font-semibold text-slate-900 mb-4">System Statistics</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 bg-gray-50 rounded">
-                <div className="text-lg font-bold text-blue-600">{systemStats.totalSquads}</div>
-                <div className="text-xs text-gray-600">Equipos</div>
+              <div className="text-center p-4 bg-slate-50 rounded-xl">
+                <div className="text-2xl font-light text-slate-900 mb-1">{systemStats.totalSquads}</div>
+                <div className="text-xs text-slate-500 font-medium">Teams</div>
               </div>
-              <div className="text-center p-3 bg-gray-50 rounded">
-                <div className="text-lg font-bold text-green-600">{systemStats.totalJudges}</div>
-                <div className="text-xs text-gray-600">Jueces</div>
+              <div className="text-center p-4 bg-slate-50 rounded-xl">
+                <div className="text-2xl font-light text-slate-900 mb-1">{systemStats.totalJudges}</div>
+                <div className="text-xs text-slate-500 font-medium">Judges</div>
               </div>
-              <div className="text-center p-3 bg-gray-50 rounded">
-                <div className="text-lg font-bold text-purple-600">{systemStats.totalCriteria}</div>
-                <div className="text-xs text-gray-600">Criterios</div>
+              <div className="text-center p-4 bg-slate-50 rounded-xl">
+                <div className="text-2xl font-light text-slate-900 mb-1">{systemStats.totalCriteria}</div>
+                <div className="text-xs text-slate-500 font-medium">Criteria</div>
               </div>
-              <div className="text-center p-3 bg-gray-50 rounded">
-                <div className="text-lg font-bold text-orange-600">{systemStats.totalVotes}</div>
-                <div className="text-xs text-gray-600">Votos</div>
+              <div className="text-center p-4 bg-slate-50 rounded-xl">
+                <div className="text-2xl font-light text-slate-900 mb-1">{systemStats.totalVotes}</div>
+                <div className="text-xs text-slate-500 font-medium">Votes</div>
               </div>
             </div>
             

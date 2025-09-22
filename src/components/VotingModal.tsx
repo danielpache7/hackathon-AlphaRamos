@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Squad } from '@/config/squads'
 import { evaluationCriteria } from '@/config/criteria'
 import { DatabaseService } from '@/lib/database'
+import { useToast } from '@/contexts/ToastContext'
 
 interface VotingModalProps {
   squad: Squad
@@ -13,6 +14,7 @@ interface VotingModalProps {
 export default function VotingModal({ squad, judgeName, onClose, onVoteSubmitted }: VotingModalProps) {
   const [scores, setScores] = useState<Record<string, number>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { success, error, warning } = useToast()
 
   const handleScoreChange = (criterionId: string, score: number) => {
     setScores(prev => ({
@@ -40,14 +42,14 @@ export default function VotingModal({ squad, judgeName, onClose, onVoteSubmitted
 
   const handleSubmit = async () => {
     if (!isFormValid()) {
-      alert('Por favor califica todos los criterios con puntajes del 1 al 10.')
+      warning('Por favor califica todos los criterios con puntajes del 1 al 10.', 'Evaluación Incompleta')
       return
     }
 
     // Check if judge has already voted for this squad
     const hasAlreadyVoted = await DatabaseService.hasJudgeVoted(judgeName, squad.id)
     if (hasAlreadyVoted) {
-      alert('Ya has votado por este equipo. No puedes votar nuevamente.')
+      warning('Ya has votado por este equipo. No puedes votar de nuevo.', 'Ya Votado')
       onClose()
       return
     }
@@ -58,54 +60,58 @@ export default function VotingModal({ squad, judgeName, onClose, onVoteSubmitted
       const result = await DatabaseService.submitVote(judgeName, squad.id, scores)
       
       if (result) {
-        alert(`¡Voto enviado exitosamente!\n\nEquipo: ${squad.name}\nPuntaje Total: ${getTotalScore()}`)
+        success(`¡Voto enviado exitosamente para ${squad.name}! Puntaje Total: ${getTotalScore().toFixed(1)}`, 'Voto Enviado')
         onVoteSubmitted()
       } else {
-        alert('Error al enviar el voto. Es posible que ya hayas votado por este equipo.')
+        error('Error al enviar el voto. Es posible que ya hayas votado por este equipo.', 'Envío Fallido')
       }
-    } catch (error) {
-      console.error('Error submitting vote:', error)
-      alert('Error al enviar el voto. Por favor intenta de nuevo.')
+    } catch (err) {
+      console.error('Error submitting vote:', err)
+      error('Error al enviar el voto. Por favor intenta de nuevo.', 'Envío Fallido')
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-        <div className="p-4 sm:p-6">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="p-6 sm:p-8">
           {/* Header */}
-          <div className="flex justify-between items-start mb-4 sm:mb-6">
-            <div className="flex-1 pr-4">
-              <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Votar por {squad.name}</h2>
-              <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                Reto: {squad.challenge}
+          <div className="flex justify-between items-start mb-6 sm:mb-8">
+            <div className="flex-1 pr-6">
+              <h2 className="text-2xl sm:text-3xl font-light text-slate-900 tracking-tight mb-2">
+                Votar por {squad.name}
+              </h2>
+              <p className="text-slate-600 leading-relaxed">
+                {squad.challenge}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 text-3xl leading-none"
+              className="text-slate-400 hover:text-slate-600 transition-colors p-2"
               disabled={isSubmitting}
             >
-              ×
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
 
           {/* Squad Info */}
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-slate-50 rounded-2xl p-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Mentor:</p>
-                <p className="text-sm text-gray-600">{squad.mentor}</p>
+                <p className="text-sm text-slate-400 mb-2">Mentor</p>
+                <p className="text-slate-700 font-medium">{squad.mentor}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Integrantes:</p>
-                <div className="flex flex-wrap gap-1">
+                <p className="text-sm text-slate-400 mb-3">Miembros del Equipo</p>
+                <div className="flex flex-wrap gap-2">
                   {squad.members.map((member, index) => (
                     <span
                       key={index}
-                      className="bg-white text-gray-700 px-2 py-1 rounded text-xs"
+                      className="bg-white text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium border border-slate-200"
                     >
                       {member}
                     </span>
@@ -117,48 +123,48 @@ export default function VotingModal({ squad, judgeName, onClose, onVoteSubmitted
 
           {/* Scoring Form */}
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900">Criterios de Evaluación</h3>
+            <h3 className="text-xl font-semibold text-slate-900 mb-6">Criterios de Evaluación</h3>
             
             {evaluationCriteria.map((criterion) => (
-              <div key={criterion.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex justify-between items-start mb-3">
+              <div key={criterion.id} className="bg-white border border-slate-200/60 rounded-2xl p-6 hover:border-slate-300/60 transition-colors">
+                <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{criterion.name}</h4>
-                    <p className="text-sm text-gray-600 mt-1">{criterion.description}</p>
+                    <h4 className="font-semibold text-slate-900 mb-2">{criterion.name}</h4>
+                    <p className="text-slate-600 leading-relaxed">{criterion.description}</p>
                   </div>
-                  <div className="ml-4 text-right">
-                    <span className="text-sm font-medium text-blue-600">
-                      Peso: {criterion.weight}%
+                  <div className="ml-6 text-right">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-slate-100 text-slate-700">
+                      {criterion.weight}%
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-                    <span className="text-sm text-gray-500 whitespace-nowrap">Puntaje:</span>
-                    <div className="flex flex-wrap gap-1">
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
-                        <button
-                          key={score}
-                          onClick={() => handleScoreChange(criterion.id, score)}
-                          className={`w-8 h-8 sm:w-8 sm:h-8 rounded text-sm font-medium transition-colors ${
-                            scores[criterion.id] === score
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                          disabled={isSubmitting}
-                        >
-                          {score}
-                        </button>
-                      ))}
-                    </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-500 font-medium">Tu Puntaje</span>
+                    {scores[criterion.id] && (
+                      <span className="text-sm text-slate-600">
+                        Ponderado: <span className="font-semibold text-slate-900">{calculateWeightedScore(criterion.id, scores[criterion.id]).toFixed(1)}</span>
+                      </span>
+                    )}
                   </div>
                   
-                  {scores[criterion.id] && (
-                    <div className="text-sm text-gray-600">
-                      Puntaje ponderado: {calculateWeightedScore(criterion.id, scores[criterion.id])}
-                    </div>
-                  )}
+                  <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
+                      <button
+                        key={score}
+                        onClick={() => handleScoreChange(criterion.id, score)}
+                        className={`aspect-square rounded-xl text-sm font-semibold transition-all duration-200 ${
+                          scores[criterion.id] === score
+                            ? 'bg-slate-900 text-white shadow-lg scale-105'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200 hover:scale-105'
+                        }`}
+                        disabled={isSubmitting}
+                      >
+                        {score}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             ))}
@@ -166,19 +172,22 @@ export default function VotingModal({ squad, judgeName, onClose, onVoteSubmitted
 
           {/* Total Score */}
           {Object.keys(scores).length > 0 && (
-            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="mt-8 bg-slate-50 border border-slate-200 rounded-2xl p-6">
               <div className="flex justify-between items-center">
-                <span className="font-medium text-blue-900">Puntaje Total:</span>
-                <span className="text-xl font-bold text-blue-900">{getTotalScore()}</span>
+                <div>
+                  <span className="text-lg font-semibold text-slate-900">Puntaje Total Ponderado</span>
+                  <p className="text-sm text-slate-500 mt-1">Suma de todos los criterios con pesos aplicados</p>
+                </div>
+                <span className="text-3xl font-light text-slate-900">{getTotalScore()}</span>
               </div>
             </div>
           )}
 
           {/* Actions */}
-          <div className="flex justify-end space-x-3 mt-6 pt-6 border-t">
+          <div className="flex justify-end space-x-4 mt-8 pt-6 border-t border-slate-200">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              className="px-6 py-2.5 text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors font-medium"
               disabled={isSubmitting}
             >
               Cancelar
@@ -186,15 +195,15 @@ export default function VotingModal({ squad, judgeName, onClose, onVoteSubmitted
             <button
               onClick={handleSubmit}
               disabled={!isFormValid() || isSubmitting}
-              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-8 py-2.5 rounded-xl font-medium transition-all duration-200 ${
                 isFormValid() && !isSubmitting
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  ? 'bg-slate-900 text-white hover:bg-slate-800 shadow-lg hover:shadow-xl'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
               }`}
             >
               {isSubmitting ? (
                 <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
                   <span>Enviando...</span>
                 </div>
               ) : (
@@ -204,6 +213,8 @@ export default function VotingModal({ squad, judgeName, onClose, onVoteSubmitted
           </div>
         </div>
       </div>
+      
+
     </div>
   )
 }

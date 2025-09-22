@@ -1,11 +1,12 @@
 import { Vote } from './supabase'
 import { evaluationCriteria } from '@/config/criteria'
-import { squads } from '@/config/squads'
+import { squads, CATEGORIES } from '@/config/squads'
 import { judges } from '@/config/access-codes'
 
 export interface SquadScore {
   squadId: string
   squadName: string
+  category: 'innovation' | 'commercial'
   totalScore: number
   voteCount: number
   averageScore: number
@@ -15,6 +16,14 @@ export interface SquadScore {
     criteriaScores: Record<string, number>
     timestamp: string
   }[]
+}
+
+export interface CategoryRanking {
+  category: 'innovation' | 'commercial'
+  categoryName: string
+  icon: string
+  squads: SquadScore[]
+  topThree: SquadScore[]
 }
 
 export interface JudgeProgress {
@@ -42,6 +51,7 @@ export class ScoringService {
       squadScores[squad.id] = {
         squadId: squad.id,
         squadName: squad.name,
+        category: squad.category,
         totalScore: 0,
         voteCount: 0,
         averageScore: 0,
@@ -117,6 +127,27 @@ export class ScoringService {
     return Object.values(judgeProgress).sort((a, b) => b.percentage - a.percentage)
   }
 
+  static calculateCategoryRankings(votes: Vote[]): CategoryRanking[] {
+    const allScores = this.calculateSquadScores(votes)
+    
+    return Object.values(CATEGORIES).map(category => {
+      const categorySquads = allScores.filter(squad => squad.category === category.id)
+      const sortedSquads = categorySquads.sort((a, b) => b.totalScore - a.totalScore)
+      
+      return {
+        category: category.id as 'innovation' | 'commercial',
+        categoryName: category.name,
+        icon: category.icon,
+        squads: sortedSquads,
+        topThree: sortedSquads.slice(0, 3)
+      }
+    })
+  }
+
+  static getSquadsByCategory(category: 'innovation' | 'commercial') {
+    return squads.filter(squad => squad.category === category)
+  }
+
   static getOverallStats(votes: Vote[]) {
     const totalPossibleVotes = judges.length * squads.length
     const totalVotes = votes.length
@@ -125,13 +156,31 @@ export class ScoringService {
     const judgeProgress = this.calculateJudgeProgress(votes)
     const completedJudges = judgeProgress.filter(j => j.percentage === 100).length
     
+    const categoryStats = Object.values(CATEGORIES).map(category => {
+      const categorySquads = squads.filter(s => s.category === category.id)
+      const categoryVotes = votes.filter(v => {
+        const squad = squads.find(s => s.id === v.squad_id)
+        return squad?.category === category.id
+      })
+      
+      return {
+        category: category.id,
+        name: category.name,
+        icon: category.icon,
+        totalSquads: categorySquads.length,
+        totalVotes: categoryVotes.length,
+        possibleVotes: judges.length * categorySquads.length
+      }
+    })
+    
     return {
       totalVotes,
       totalPossibleVotes,
       completionPercentage,
       completedJudges,
       totalJudges: judges.length,
-      totalSquads: squads.length
+      totalSquads: squads.length,
+      categoryStats
     }
   }
 }

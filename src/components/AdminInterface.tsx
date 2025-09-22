@@ -1,6 +1,7 @@
 import { User } from '@/lib/auth'
 import { useRealTimeVotes } from '@/hooks/useRealtime'
 import { ExcelExportService } from '@/lib/excel-export'
+import { useToast } from '@/contexts/ToastContext'
 import RealTimeResults from './RealTimeResults'
 import VotingControls from './VotingControls'
 import SystemDiagnostics from './SystemDiagnostics'
@@ -12,34 +13,35 @@ interface AdminInterfaceProps {
 
 export default function AdminInterface({ user }: AdminInterfaceProps) {
   const { votes, loading, refreshVotes, lastRefresh } = useRealTimeVotes()
+  const { success, error, warning } = useToast()
 
   const handleExportExcel = () => {
     if (votes.length === 0) {
-      alert('No hay votos para exportar.')
+      warning('No hay votos para exportar.', 'Exportación Fallida')
       return
     }
 
     try {
       ExcelExportService.generateReport(votes)
-      alert('Reporte Excel generado exitosamente.')
-    } catch (error) {
-      console.error('Error generating Excel report:', error)
-      alert('Error al generar el reporte Excel.')
+      success('Reporte Excel generado exitosamente.', 'Exportación Completa')
+    } catch (err) {
+      console.error('Error generating Excel report:', err)
+      error('Error al generar el reporte Excel.', 'Exportación Fallida')
     }
   }
 
   const handleExportDetailedReport = () => {
     if (votes.length === 0) {
-      alert('No hay votos para exportar.')
+      warning('No hay votos para exportar.', 'Exportación Fallida')
       return
     }
 
     try {
       ExcelExportService.generateDetailedReport(votes)
-      alert('Reporte detallado generado exitosamente.')
-    } catch (error) {
-      console.error('Error generating detailed report:', error)
-      alert('Error al generar el reporte detallado.')
+      success('Reporte detallado generado exitosamente.', 'Exportación Completa')
+    } catch (err) {
+      console.error('Error generating detailed report:', err)
+      error('Error al generar el reporte detallado.', 'Exportación Fallida')
     }
   }
 
@@ -78,47 +80,61 @@ export default function AdminInterface({ user }: AdminInterfaceProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center space-y-6 lg:space-y-0 mb-8">
         <div className="flex-1">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Panel de Administrador</h2>
-          <p className="text-sm sm:text-base text-gray-600">Hola {user.name}, monitorea y gestiona la votación en tiempo real.</p>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mt-2">
-            <p className="text-xs text-gray-500">
-              Última actualización: {lastRefresh.toLocaleTimeString('es-ES')} • Auto-refresh cada minuto
+          <h2 className="text-2xl sm:text-3xl font-light text-slate-900 tracking-tight mb-2">
+            Panel de Administración
+          </h2>
+          <p className="text-slate-600 mb-3">
+            Bienvenido {user.name}, monitorea y gestiona el proceso de votación en tiempo real.
+          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 text-sm">
+            <p className="text-slate-400">
+              Última actualización: {lastRefresh.toLocaleTimeString('es-ES')} • Auto-actualización cada minuto
             </p>
-            <ConnectionStatus />
+            <div className="mt-2 sm:mt-0">
+              <ConnectionStatus />
+            </div>
           </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+          <a
+            href="/dashboard"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-6 py-2.5 rounded-xl font-medium transition-all duration-200 bg-blue-600 text-white hover:bg-blue-700 text-center"
+          >
+            Dashboard en Vivo
+          </a>
           <button
             onClick={refreshVotes}
             disabled={loading}
-            className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-6 py-2.5 rounded-xl font-medium transition-all duration-200 ${
               loading
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
+                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                : 'bg-slate-900 text-white hover:bg-slate-800'
             }`}
           >
             {loading ? (
               <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
                 <span>Actualizando...</span>
               </div>
             ) : (
-              <>🔄 Refrescar</>
+              <>Actualizar</>
             )}
           </button>
           <button
             onClick={handleExportDetailedReport}
             disabled={votes.length === 0}
-            className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-6 py-2.5 rounded-xl font-medium transition-all duration-200 ${
               votes.length === 0
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-green-600 text-white hover:bg-green-700'
+                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                : 'bg-emerald-600 text-white hover:bg-emerald-700'
             }`}
           >
-            📈 Reporte Detallado
+            Exportar Reporte
           </button>
         </div>
       </div>
@@ -130,30 +146,30 @@ export default function AdminInterface({ user }: AdminInterfaceProps) {
       <RealTimeResults />
 
       {/* Quick Stats */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumen Rápido</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold text-blue-600">{votes.length}</div>
-            <div className="text-sm text-gray-600">Votos Totales</div>
+      <div className="bg-white rounded-2xl border border-slate-200/60 p-8">
+        <h3 className="text-xl font-semibold text-slate-900 mb-6">Resumen Rápido</h3>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="text-center">
+            <div className="text-3xl font-light text-slate-900 mb-1">{votes.length}</div>
+            <div className="text-sm text-slate-500 font-medium">Total de Votos</div>
           </div>
-          <div>
-            <div className="text-2xl font-bold text-green-600">
+          <div className="text-center">
+            <div className="text-3xl font-light text-slate-900 mb-1">
               {new Set(votes.map(v => v.judge_name)).size}
             </div>
-            <div className="text-sm text-gray-600">Jueces Activos</div>
+            <div className="text-sm text-slate-500 font-medium">Jueces Activos</div>
           </div>
-          <div>
-            <div className="text-2xl font-bold text-purple-600">
+          <div className="text-center">
+            <div className="text-3xl font-light text-slate-900 mb-1">
               {new Set(votes.map(v => v.squad_id)).size}
             </div>
-            <div className="text-sm text-gray-600">Equipos con Votos</div>
+            <div className="text-sm text-slate-500 font-medium">Equipos con Votos</div>
           </div>
-          <div>
-            <div className="text-2xl font-bold text-orange-600">
+          <div className="text-center">
+            <div className="text-3xl font-light text-slate-900 mb-1">
               {votes.length > 0 ? new Date(Math.max(...votes.map(v => new Date(v.created_at).getTime()))).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
             </div>
-            <div className="text-sm text-gray-600">Último Voto</div>
+            <div className="text-sm text-slate-500 font-medium">Último Voto</div>
           </div>
         </div>
       </div>

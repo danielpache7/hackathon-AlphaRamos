@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
 import { User } from '@/lib/auth'
-import { squads, Squad } from '@/config/squads'
+import { squads, Squad, CATEGORIES } from '@/config/squads'
 import { useRealTimeJudgeVotes, useRealTimeVotingStatus } from '@/hooks/useRealtime'
+import { Vote } from '@/lib/supabase'
+import { useToast } from '@/contexts/ToastContext'
 
 import SquadCard from './SquadCard'
 import VotingModal from './VotingModal'
 import VotingProgress from './VotingProgress'
 import ConnectionStatus from './ConnectionStatus'
+import VoteDetailModal from './VoteDetailModal'
 
 interface JudgeInterfaceProps {
   user: User
@@ -15,6 +18,8 @@ interface JudgeInterfaceProps {
 export default function JudgeInterface({ user }: JudgeInterfaceProps) {
   const [selectedSquad, setSelectedSquad] = useState<Squad | null>(null)
   const [votedSquads, setVotedSquads] = useState<Set<string>>(new Set())
+  const [viewingVote, setViewingVote] = useState<{ squad: Squad; vote: Vote } | null>(null)
+  const { warning } = useToast()
   
   const { votes: judgeVotes, loading: votesLoading, refreshJudgeVotes, lastRefresh } = useRealTimeJudgeVotes(user.name)
   const { votingStatus, loading: statusLoading } = useRealTimeVotingStatus()
@@ -27,7 +32,7 @@ export default function JudgeInterface({ user }: JudgeInterfaceProps) {
 
   const handleVoteClick = (squad: Squad) => {
     if (votingStatus === 'CLOSED') {
-      alert('La votación está cerrada.')
+      warning('La votación está actualmente cerrada. Por favor espera a que el administrador la reabra.', 'Votación Cerrada')
       return
     }
     setSelectedSquad(squad)
@@ -36,6 +41,10 @@ export default function JudgeInterface({ user }: JudgeInterfaceProps) {
   const handleVoteSubmitted = () => {
     setSelectedSquad(null)
     // The real-time hook will automatically update the votes
+  }
+
+  const handleViewVote = (squad: Squad, vote: Vote) => {
+    setViewingVote({ squad, vote })
   }
 
   const getVoteForSquad = (squadId: string) => {
@@ -74,50 +83,60 @@ export default function JudgeInterface({ user }: JudgeInterfaceProps) {
 
   return (
     <div>
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 space-y-4 lg:space-y-0">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 space-y-6 lg:space-y-0">
         <div className="flex-1">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Panel de Juez</h2>
-          <p className="text-sm sm:text-base text-gray-600">Hola {user.name}, aquí puedes votar por los equipos.</p>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mt-1">
-            <p className="text-xs text-gray-500">
+          <h2 className="text-2xl sm:text-3xl font-light text-slate-900 tracking-tight mb-2">
+            Panel de Juez
+          </h2>
+          <p className="text-slate-600 mb-3">
+            Bienvenido {user.name}, evalúa los equipos a continuación.
+          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 text-sm">
+            <p className="text-slate-400">
               Última actualización: {lastRefresh?.toLocaleTimeString('es-ES')}
             </p>
-            <div className="mt-1 sm:mt-0">
+            <div className="mt-2 sm:mt-0">
               <ConnectionStatus />
             </div>
           </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
-          <button
-            onClick={refreshJudgeVotes}
-            disabled={votesLoading}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
-              votesLoading
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
-          >
-            {votesLoading ? (
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Actualizando...</span>
-              </div>
-            ) : (
-              <>🔄 Refrescar</>
-            )}
-          </button>
-          
-          <div className="text-right">
-            <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+        <div className="w-full lg:w-auto flex flex-col space-y-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+            <button
+              onClick={refreshJudgeVotes}
+              disabled={votesLoading}
+              className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 text-sm whitespace-nowrap ${
+                votesLoading
+                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  : 'bg-slate-900 text-white hover:bg-slate-800'
+              }`}
+            >
+              {votesLoading ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                  <span>Actualizando...</span>
+                </div>
+              ) : (
+                <>Actualizar</>
+              )}
+            </button>
+            
+            <div className={`inline-flex items-center justify-center space-x-2 px-3 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
               votingStatus === 'OPEN' 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-red-100 text-red-800'
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                : 'bg-red-50 text-red-700 border border-red-200'
             }`}>
-              {votingStatus === 'OPEN' ? '🟢 Votación Abierta' : '🔴 Votación Cerrada'}
+              <div className={`w-2 h-2 rounded-full ${
+                votingStatus === 'OPEN' ? 'bg-emerald-500' : 'bg-red-500'
+              }`}></div>
+              <span>{votingStatus === 'OPEN' ? 'Votación Abierta' : 'Votación Cerrada'}</span>
             </div>
-            <p className="text-sm text-gray-500 mt-1">
-              Has votado por {votedSquads.size} de {squads.length} equipos
+          </div>
+          
+          <div className="text-center lg:text-right">
+            <p className="text-sm text-slate-500">
+              {votedSquads.size} de {squads.length} equipos votados
             </p>
           </div>
         </div>
@@ -143,17 +162,38 @@ export default function JudgeInterface({ user }: JudgeInterfaceProps) {
         lastRefresh={lastRefresh}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {squads.map((squad) => (
-          <SquadCard
-            key={squad.id}
-            squad={squad}
-            hasVoted={votedSquads.has(squad.id)}
-            vote={getVoteForSquad(squad.id)}
-            onVote={handleVoteClick}
-            disabled={votingStatus === 'CLOSED'}
-          />
-        ))}
+      <div className="space-y-12">
+        {Object.values(CATEGORIES).map(category => {
+          const categorySquads = squads.filter(squad => squad.category === category.id)
+          return (
+            <div key={category.id} className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0">
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl">{category.icon}</span>
+                  <h3 className="text-xl font-semibold text-slate-900">{category.name}</h3>
+                </div>
+                <div className="hidden sm:block flex-1 h-px bg-slate-200 mx-4"></div>
+                <span className="text-sm text-slate-500 sm:whitespace-nowrap">
+                  {categorySquads.filter(squad => votedSquads.has(squad.id)).length} de {categorySquads.length} votados
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                {categorySquads.map((squad) => (
+                  <SquadCard
+                    key={squad.id}
+                    squad={squad}
+                    hasVoted={votedSquads.has(squad.id)}
+                    vote={getVoteForSquad(squad.id)}
+                    onVote={handleVoteClick}
+                    onViewVote={handleViewVote}
+                    disabled={votingStatus === 'CLOSED'}
+                  />
+                ))}
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       {selectedSquad && (
@@ -164,6 +204,16 @@ export default function JudgeInterface({ user }: JudgeInterfaceProps) {
           onVoteSubmitted={handleVoteSubmitted}
         />
       )}
+
+      {viewingVote && (
+        <VoteDetailModal
+          squad={viewingVote.squad}
+          vote={viewingVote.vote}
+          onClose={() => setViewingVote(null)}
+        />
+      )}
+      
+
     </div>
   )
 }
