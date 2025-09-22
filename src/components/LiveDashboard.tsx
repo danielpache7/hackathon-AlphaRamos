@@ -5,7 +5,12 @@ import { useState, useEffect } from 'react'
 export default function LiveDashboard() {
   const { votes, loading, lastRefresh, refreshVotes } = useRealTimeVotes()
   const [categoryRankings, setCategoryRankings] = useState<CategoryRanking[]>([])
-  const [overallStats, setOverallStats] = useState<any>(null)
+  const [overallStats, setOverallStats] = useState<{
+    totalVotes: number;
+    completionPercentage: number;
+    completedJudges: number;
+    totalSquads: number;
+  } | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   useEffect(() => {

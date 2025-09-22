@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase'
 
 export default function ConnectionStatus() {
   const [isConnected, setIsConnected] = useState(true)
-  const [lastPing, setLastPing] = useState<Date>(new Date())
+  const [, setLastPing] = useState<Date>(new Date())
 
   useEffect(() => {
     // Test connection every 30 seconds

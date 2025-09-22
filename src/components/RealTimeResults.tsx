@@ -7,7 +7,12 @@ export default function RealTimeResults() {
   const [squadScores, setSquadScores] = useState<SquadScore[]>([])
   const [categoryRankings, setCategoryRankings] = useState<CategoryRanking[]>([])
   const [judgeProgress, setJudgeProgress] = useState<JudgeProgress[]>([])
-  const [overallStats, setOverallStats] = useState<any>(null)
+  const [overallStats, setOverallStats] = useState<{
+    totalVotes: number;
+    completionPercentage: number;
+    completedJudges: number;
+    totalSquads: number;
+  } | null>(null)
   const [activeTab, setActiveTab] = useState<'categories' | 'overall'>('categories')
 
   useEffect(() => {
