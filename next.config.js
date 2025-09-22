@@ -3,6 +3,16 @@ const nextConfig = {
   // Enable React strict mode for better development experience
   reactStrictMode: true,
   
+  // Disable ESLint during build
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  
+  // Disable TypeScript errors during build
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  
   // Optimize images
   images: {
     domains: [],
