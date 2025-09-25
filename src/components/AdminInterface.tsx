@@ -85,26 +85,26 @@ export default function AdminInterface({ user }: AdminInterfaceProps) {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <div className="h-8 bg-gray-200 rounded w-64 mb-2 animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded w-96 animate-pulse"></div>
+            <div className="h-8 rounded w-64 mb-2 animate-pulse" style={{ backgroundColor: '#F2F2F2' }}></div>
+            <div className="h-4 rounded w-96 animate-pulse" style={{ backgroundColor: '#F2F2F2' }}></div>
           </div>
-          <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
+          <div className="h-10 rounded w-32 animate-pulse" style={{ backgroundColor: '#F2F2F2' }}></div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg border p-6" style={{ borderColor: '#009FE3' }}>
           <div className="animate-pulse space-y-4">
-            <div className="h-6 bg-gray-200 rounded w-48"></div>
+            <div className="h-6 rounded w-48" style={{ backgroundColor: '#F2F2F2' }}></div>
             <div className="flex space-x-4">
-              <div className="h-10 bg-gray-200 rounded flex-1"></div>
-              <div className="h-10 bg-gray-200 rounded flex-1"></div>
+              <div className="h-10 rounded flex-1" style={{ backgroundColor: '#F2F2F2' }}></div>
+              <div className="h-10 rounded flex-1" style={{ backgroundColor: '#F2F2F2' }}></div>
             </div>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-lg shadow p-4">
+            <div key={i} className="bg-white rounded-lg border p-4" style={{ borderColor: '#009FE3' }}>
               <div className="animate-pulse">
-                <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-8 rounded w-16 mb-2" style={{ backgroundColor: '#F2F2F2' }}></div>
+                <div className="h-4 rounded w-24" style={{ backgroundColor: '#F2F2F2' }}></div>
               </div>
             </div>
           ))}
@@ -144,14 +144,24 @@ export default function AdminInterface({ user }: AdminInterfaceProps) {
             >
               Dashboard en Vivo
             </a>
+            <a
+              href="/mentions"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 sm:px-6 py-2.5 rounded-xl font-medium transition-all duration-200 hover:opacity-90 text-center text-sm sm:text-base whitespace-nowrap"
+              style={{ backgroundColor: '#A7E100', color: '#003366' }}
+            >
+              🏆 Menciones de Honor
+            </a>
             <button
               onClick={refreshVotes}
               disabled={loading}
               className={`px-4 sm:px-6 py-2.5 rounded-xl font-medium transition-all duration-200 text-sm sm:text-base whitespace-nowrap ${
                 loading
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                  : 'bg-slate-900 text-white hover:bg-slate-800'
+                  ? 'cursor-not-allowed opacity-50'
+                  : 'text-white hover:opacity-90'
               }`}
+              style={{ backgroundColor: loading ? '#F2F2F2' : '#009FE3', color: loading ? '#1A1A1A' : 'white' }}
             >
               {loading ? (
                 <div className="flex items-center space-x-2">
@@ -167,9 +177,10 @@ export default function AdminInterface({ user }: AdminInterfaceProps) {
               disabled={votes.length === 0}
               className={`px-4 sm:px-6 py-2.5 rounded-xl font-medium transition-all duration-200 text-sm sm:text-base whitespace-nowrap ${
                 votes.length === 0
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  ? 'cursor-not-allowed opacity-50'
+                  : 'text-white hover:opacity-90'
               }`}
+              style={{ backgroundColor: votes.length === 0 ? '#F2F2F2' : '#A7E100', color: votes.length === 0 ? '#1A1A1A' : '#003366' }}
             >
               Exportar Reporte
             </button>
@@ -184,7 +195,7 @@ export default function AdminInterface({ user }: AdminInterfaceProps) {
       <RealTimeResults />
 
       {/* Quick Stats */}
-      <div className="bg-white rounded-2xl border border-slate-200/60 p-8">
+      <div className="bg-white rounded-2xl border p-8" style={{ borderColor: '#009FE3' }}>
         <h3 className="text-xl font-semibold mb-6" style={{ color: '#003366' }}>Resumen Rápido</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="text-center">
@@ -218,7 +229,7 @@ export default function AdminInterface({ user }: AdminInterfaceProps) {
       {/* Danger Zone */}
       <div className="border rounded-2xl p-8 mt-12" style={{ backgroundColor: '#F2F2F2', borderColor: '#009FE3' }}>
         <h3 className="text-xl font-semibold mb-4" style={{ color: '#003366' }}>Zona de Peligro</h3>
-        <p className="text-red-700 mb-6">
+        <p className="mb-6" style={{ color: '#1A1A1A' }}>
           Esta acción eliminará permanentemente todos los votos y reiniciará la votación. Esta acción no se puede deshacer.
         </p>
         <button
@@ -226,9 +237,10 @@ export default function AdminInterface({ user }: AdminInterfaceProps) {
           disabled={isDeleting || votes.length === 0}
           className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
             isDeleting || votes.length === 0
-              ? 'bg-red-200 text-red-400 cursor-not-allowed'
-              : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-lg'
+              ? 'cursor-not-allowed opacity-50'
+              : 'text-white hover:opacity-90 hover:shadow-lg'
           }`}
+          style={{ backgroundColor: isDeleting || votes.length === 0 ? '#F2F2F2' : '#dc2626', color: isDeleting || votes.length === 0 ? '#1A1A1A' : 'white' }}
         >
           {isDeleting ? (
             <div className="flex items-center space-x-2">

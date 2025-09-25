@@ -4,6 +4,7 @@ import { DatabaseService } from '@/lib/database'
 import { useState, useEffect } from 'react'
 import { useToast } from '@/contexts/ToastContext'
 import WinnersDisplay from './WinnersDisplay'
+import HonorableMentions from './HonorableMentions'
 
 export default function LiveDashboard() {
   const { votes, loading, lastRefresh, refreshVotes } = useRealTimeVotes()
@@ -188,7 +189,7 @@ export default function LiveDashboard() {
       )}
 
       {/* Category Rankings */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 mb-8">
         {categoryRankings.map((category) => (
           <div key={category.category} className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/60 overflow-hidden">
             <div className="p-4 sm:p-6 border-b border-slate-200/60">
@@ -230,6 +231,9 @@ export default function LiveDashboard() {
           </div>
         ))}
       </div>
+
+      {/* Honorable Mentions */}
+      <HonorableMentions votes={votes} />
     </div>
   )
 }

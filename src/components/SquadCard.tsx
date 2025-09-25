@@ -31,7 +31,7 @@ export default function SquadCard({ squad, hasVoted, vote, onVote, onViewVote, o
       style={{
         backgroundColor: hasVoted ? '#A7E100' : 'white',
         borderColor: hasVoted ? '#A7E100' : '#009FE3',
-        opacity: hasVoted ? 0.9 : 1
+        opacity: hasVoted ? 1 : 1
       }}>
       <div className="flex flex-col space-y-4 mb-6">
         <div className="flex-1">
