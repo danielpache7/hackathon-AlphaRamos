@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase, Vote } from '@/lib/supabase'
 import { DatabaseService } from '@/lib/database'
 
@@ -8,54 +8,83 @@ export function useRealTimeVotes() {
   const [loading, setLoading] = useState(true)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
 
-  const refreshVotes = async () => {
+  const refreshVotes = useCallback(async () => {
     setLoading(true)
-    const updatedVotes = await DatabaseService.getAllVotes()
-    setVotes(updatedVotes)
-    setLastRefresh(new Date())
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    // Initial fetch
-    const fetchVotes = async () => {
-      const initialVotes = await DatabaseService.getAllVotes()
-      setVotes(initialVotes)
+    try {
+      const updatedVotes = await DatabaseService.getAllVotes()
+      setVotes(updatedVotes)
+      setLastRefresh(new Date())
+    } catch (error) {
+      console.error('Error refreshing votes:', error)
+    } finally {
       setLoading(false)
     }
+  }, [])
 
-    fetchVotes()
-
-    // Set up real-time subscription
-    const subscription = supabase
-      .channel('votes-channel')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'votes'
-        },
-        async (payload) => {
-          console.log('Real-time vote update:', payload)
-          
-          // Refresh all votes when any change occurs
-          const updatedVotes = await DatabaseService.getAllVotes()
-          setVotes(updatedVotes)
-          setLastRefresh(new Date())
-        }
-      )
-      .subscribe()
-
-    // Auto-refresh every minute
-    const autoRefreshInterval = setInterval(refreshVotes, 60000) // 60 seconds
-
-    // Cleanup subscription and interval
-    return () => {
-      subscription.unsubscribe()
-      clearInterval(autoRefreshInterval)
+  const handleRealtimeUpdate = useCallback(async (payload: any) => {
+    console.log('Real-time vote update:', payload)
+    try {
+      const updatedVotes = await DatabaseService.getAllVotes()
+      setVotes(updatedVotes)
+      setLastRefresh(new Date())
+    } catch (error) {
+      console.error('Error handling realtime update:', error)
     }
   }, [])
+
+  useEffect(() => {
+    let subscription: any
+    let autoRefreshInterval: NodeJS.Timeout
+
+    const initializeData = async () => {
+      try {
+        const initialVotes = await DatabaseService.getAllVotes()
+        setVotes(initialVotes)
+        setLastRefresh(new Date())
+      } catch (error) {
+        console.error('Error fetching initial votes:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    const setupSubscription = () => {
+      subscription = supabase
+        .channel('votes-realtime', {
+          config: {
+            broadcast: { self: true },
+            presence: { key: 'votes' }
+          }
+        })
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'votes'
+          },
+          handleRealtimeUpdate
+        )
+        .subscribe((status) => {
+          console.log('Votes subscription status:', status)
+        })
+    }
+
+    initializeData()
+    setupSubscription()
+    
+    // Auto-refresh every 30 seconds as fallback
+    autoRefreshInterval = setInterval(refreshVotes, 30000)
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe()
+      }
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval)
+      }
+    }
+  }, [refreshVotes, handleRealtimeUpdate])
 
   return { votes, loading, refreshVotes, lastRefresh }
 }
@@ -65,41 +94,80 @@ export function useRealTimeVotingStatus() {
   const [votingStatus, setVotingStatus] = useState<'OPEN' | 'CLOSED'>('OPEN')
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    // Initial fetch
-    const fetchStatus = async () => {
-      const status = await DatabaseService.getVotingStatus()
-      setVotingStatus(status)
-      setLoading(false)
-    }
-
-    fetchStatus()
-
-    // Set up real-time subscription
-    const subscription = supabase
-      .channel('settings-channel')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'settings'
-        },
-        async (payload) => {
-          console.log('Real-time settings update:', payload)
-          
-          if (payload.new && 'voting_status' in payload.new) {
-            setVotingStatus(payload.new.voting_status as 'OPEN' | 'CLOSED')
-          }
-        }
-      )
-      .subscribe()
-
-    // Cleanup subscription
-    return () => {
-      subscription.unsubscribe()
+  const handleStatusUpdate = useCallback(async (payload: any) => {
+    console.log('Real-time settings update:', payload)
+    if (payload.new && 'voting_status' in payload.new) {
+      setVotingStatus(payload.new.voting_status as 'OPEN' | 'CLOSED')
+    } else {
+      // Fallback: fetch current status
+      try {
+        const status = await DatabaseService.getVotingStatus()
+        setVotingStatus(status)
+      } catch (error) {
+        console.error('Error fetching voting status:', error)
+      }
     }
   }, [])
+
+  useEffect(() => {
+    let subscription: any
+    let statusCheckInterval: NodeJS.Timeout
+
+    const initializeStatus = async () => {
+      try {
+        const status = await DatabaseService.getVotingStatus()
+        setVotingStatus(status)
+      } catch (error) {
+        console.error('Error fetching initial voting status:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    const setupSubscription = () => {
+      subscription = supabase
+        .channel('settings-realtime', {
+          config: {
+            broadcast: { self: true },
+            presence: { key: 'settings' }
+          }
+        })
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'settings'
+          },
+          handleStatusUpdate
+        )
+        .subscribe((status) => {
+          console.log('Settings subscription status:', status)
+        })
+    }
+
+    initializeStatus()
+    setupSubscription()
+    
+    // Check status every 10 seconds as fallback
+    statusCheckInterval = setInterval(async () => {
+      try {
+        const status = await DatabaseService.getVotingStatus()
+        setVotingStatus(status)
+      } catch (error) {
+        console.error('Error in status check interval:', error)
+      }
+    }, 10000)
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe()
+      }
+      if (statusCheckInterval) {
+        clearInterval(statusCheckInterval)
+      }
+    }
+  }, [handleStatusUpdate])
 
   return { votingStatus, loading }
 }
@@ -110,54 +178,86 @@ export function useRealTimeJudgeVotes(judgeName: string) {
   const [loading, setLoading] = useState(true)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
 
-  const refreshJudgeVotes = async () => {
+  const refreshJudgeVotes = useCallback(async () => {
     if (!judgeName) return
     setLoading(true)
-    const judgeVotes = await DatabaseService.getVotesByJudge(judgeName)
-    setVotes(judgeVotes)
-    setLastRefresh(new Date())
-    setLoading(false)
-  }
+    try {
+      const judgeVotes = await DatabaseService.getVotesByJudge(judgeName)
+      setVotes(judgeVotes)
+      setLastRefresh(new Date())
+    } catch (error) {
+      console.error('Error refreshing judge votes:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [judgeName])
+
+  const handleJudgeRealtimeUpdate = useCallback(async (payload: any) => {
+    console.log('Real-time judge vote update:', payload)
+    if (!judgeName) return
+    try {
+      const updatedVotes = await DatabaseService.getVotesByJudge(judgeName)
+      setVotes(updatedVotes)
+      setLastRefresh(new Date())
+    } catch (error) {
+      console.error('Error handling judge realtime update:', error)
+    }
+  }, [judgeName])
 
   useEffect(() => {
     if (!judgeName) return
 
-    // Initial fetch
-    const fetchVotes = async () => {
-      const judgeVotes = await DatabaseService.getVotesByJudge(judgeName)
-      setVotes(judgeVotes)
-      setLoading(false)
+    let subscription: any
+    let autoRefreshInterval: NodeJS.Timeout
+
+    const initializeData = async () => {
+      try {
+        const judgeVotes = await DatabaseService.getVotesByJudge(judgeName)
+        setVotes(judgeVotes)
+        setLastRefresh(new Date())
+      } catch (error) {
+        console.error('Error fetching initial judge votes:', error)
+      } finally {
+        setLoading(false)
+      }
     }
 
-    fetchVotes()
+    const setupSubscription = () => {
+      subscription = supabase
+        .channel(`judge-votes-${judgeName}`, {
+          config: {
+            broadcast: { self: true },
+            presence: { key: `judge-${judgeName}` }
+          }
+        })
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'votes'
+          },
+          handleJudgeRealtimeUpdate
+        )
+        .subscribe((status) => {
+          console.log(`Judge ${judgeName} subscription status:`, status)
+        })
+    }
 
-    // Set up real-time subscription
-    const subscription = supabase
-      .channel(`judge-votes-${judgeName}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'votes',
-          filter: `judge_name=eq.${judgeName}`
-        },
-        async (payload) => {
-          console.log('Real-time judge vote update:', payload)
-          
-          // Refresh judge votes
-          const updatedVotes = await DatabaseService.getVotesByJudge(judgeName)
-          setVotes(updatedVotes)
-          setLastRefresh(new Date())
-        }
-      )
-      .subscribe()
+    initializeData()
+    setupSubscription()
+    
+    // Removed auto-refresh interval for judge votes
 
-    // Cleanup subscription
     return () => {
-      subscription.unsubscribe()
+      if (subscription) {
+        subscription.unsubscribe()
+      }
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval)
+      }
     }
-  }, [judgeName])
+  }, [judgeName, handleJudgeRealtimeUpdate])
 
   return { votes, loading, refreshJudgeVotes, lastRefresh }
 }

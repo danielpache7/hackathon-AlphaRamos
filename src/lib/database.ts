@@ -85,12 +85,12 @@ export class DatabaseService {
     }
   }
 
-  static async deleteVote(judgeId: string, squadId: string): Promise<boolean> {
+  static async deleteVote(judgeName: string, squadId: string): Promise<boolean> {
     try {
       const { error } = await supabase
         .from('votes')
         .delete()
-        .eq('judge_name', judgeId)
+        .eq('judge_name', judgeName)
         .eq('squad_id', squadId)
 
       if (error) {
@@ -122,6 +122,25 @@ export class DatabaseService {
       return !!data
     } catch (error) {
       console.error('Error checking if judge voted:', error)
+      return false
+    }
+  }
+
+  static async deleteAllVotes(): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('votes')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all records
+
+      if (error) {
+        console.error('Error deleting all votes:', error.message || error)
+        return false
+      }
+
+      return true
+    } catch (error) {
+      console.error('Error deleting all votes:', error instanceof Error ? error.message : error)
       return false
     }
   }

@@ -8,11 +8,12 @@ export interface Squad {
 }
 
 export const CATEGORIES = {
-  innovation: { id: 'innovation', name: 'Innovación', icon: '💡' },
-  commercial: { id: 'commercial', name: 'Comercial', icon: '📣' }
+  commercial: { id: 'commercial', name: 'Comercial', icon: '📣' },
+  innovation: { id: 'innovation', name: 'Innovación', icon: '💡' }
 } as const
 
 export const squads: Squad[] = [
+  // Equipos Comerciales primero
   {
     id: 'checkout-x',
     name: 'CheckOutX',
@@ -28,22 +29,6 @@ export const squads: Squad[] = [
     mentor: 'Mariella Martínez',
     challenge: 'Promoción estacional de productos Grupo Ramos',
     category: 'commercial'
-  },
-  {
-    id: 'code-cart',
-    name: 'Code Cart',
-    members: ['Christopher Ciprián', 'Ivette Roa Puente', 'Rayner Rodríguez', 'Sarah Veloz'],
-    mentor: 'Pamela Henríquez',
-    challenge: 'Fila rápida y digital',
-    category: 'innovation'
-  },
-  {
-    id: 'data-booster',
-    name: 'DataBooster',
-    members: ['Abel Andrés De Peña Núñez', 'Delio Lorenzo Rodríguez López', 'Hendry Gustavo Peguero Valdez', 'Juan Manuel Rodríguez Bello'],
-    mentor: 'Juana Martínez',
-    challenge: 'Reservas inteligentes en el DELI',
-    category: 'innovation'
   },
   {
     id: 'market-minds',
@@ -68,6 +53,31 @@ export const squads: Squad[] = [
     mentor: 'Jennifer Terrero',
     challenge: 'Campaña creativa para WALA en redes sociales',
     category: 'commercial'
+  },
+  {
+    id: 'logi-coders',
+    name: 'LogiCoders',
+    members: ['Gaspar', 'Kazi Arman Ahed', 'Mason Morris', 'Patrick Pashna'],
+    mentor: 'Pamela Zorrilla',
+    challenge: 'Nuevo producto cosméticos para jóvenes',
+    category: 'commercial'
+  },
+  // Equipos de Innovación después
+  {
+    id: 'code-cart',
+    name: 'Code Cart',
+    members: ['Christopher Ciprián', 'Ivette Roa Puente', 'Rayner Rodríguez', 'Sarah Veloz'],
+    mentor: 'Pamela Henríquez',
+    challenge: 'Fila rápida y digital',
+    category: 'innovation'
+  },
+  {
+    id: 'data-booster',
+    name: 'DataBooster',
+    members: ['Abel Andrés De Peña Núñez', 'Delio Lorenzo Rodríguez López', 'Hendry Gustavo Peguero Valdez', 'Juan Manuel Rodríguez Bello'],
+    mentor: 'Juana Martínez',
+    challenge: 'Reservas inteligentes en el DELI',
+    category: 'innovation'
   },
   {
     id: 'retail-revolution',
@@ -100,13 +110,5 @@ export const squads: Squad[] = [
     mentor: 'Ricardo Gómez',
     challenge: 'Productos sugeridos e inteligentes',
     category: 'innovation'
-  },
-  {
-    id: 'logi-coders',
-    name: 'LogiCoders',
-    members: ['Gaspar', 'Kazi Arman Ahed', 'Mason Morris', 'Patrick Pashna'],
-    mentor: 'Pamela Zorrilla',
-    challenge: 'Nuevo producto cosméticos para jóvenes',
-    category: 'commercial'
   }
 ]

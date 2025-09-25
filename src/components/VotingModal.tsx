@@ -1,20 +1,34 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Squad } from '@/config/squads'
 import { evaluationCriteria } from '@/config/criteria'
 import { DatabaseService } from '@/lib/database'
 import { useToast } from '@/contexts/ToastContext'
+import { Vote } from '@/lib/supabase'
+import { useForceRefresh } from '@/hooks/useForceRefresh'
+import ConfirmModal from './ConfirmModal'
 
 interface VotingModalProps {
   squad: Squad
   judgeName: string
   onClose: () => void
   onVoteSubmitted: () => void
+  isRevoting?: boolean
+  existingVote?: Vote
 }
 
-export default function VotingModal({ squad, judgeName, onClose, onVoteSubmitted }: VotingModalProps) {
+export default function VotingModal({ squad, judgeName, onClose, onVoteSubmitted, isRevoting = false, existingVote }: VotingModalProps) {
   const [scores, setScores] = useState<Record<string, number>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const { success, error, warning } = useToast()
+  const { forceRefresh } = useForceRefresh()
+
+  // Pre-fill scores if revoting
+  useEffect(() => {
+    if (isRevoting && existingVote?.scores) {
+      setScores(existingVote.scores)
+    }
+  }, [isRevoting, existingVote])
 
   const handleScoreChange = (criterionId: string, score: number) => {
     setScores(prev => ({
@@ -40,34 +54,55 @@ export default function VotingModal({ squad, judgeName, onClose, onVoteSubmitted
     )
   }
 
-  const handleSubmit = async () => {
+  const handleSubmitClick = () => {
     if (!isFormValid()) {
       warning('Por favor califica todos los criterios con puntajes del 1 al 10.', 'Evaluación Incompleta')
       return
     }
+    setShowConfirm(true)
+  }
 
-    // Check if judge has already voted for this squad
-    const hasAlreadyVoted = await DatabaseService.hasJudgeVoted(judgeName, squad.id)
-    if (hasAlreadyVoted) {
-      warning('Ya has votado por este equipo. No puedes votar de nuevo.', 'Ya Votado')
-      onClose()
-      return
-    }
-
+  const handleConfirmSubmit = async () => {
+    setShowConfirm(false)
     setIsSubmitting(true)
 
     try {
-      const result = await DatabaseService.submitVote(judgeName, squad.id, scores)
+      let result
+      
+      if (isRevoting) {
+        // Delete existing vote first, then submit new one
+        const deleteSuccess = await DatabaseService.deleteVote(judgeName, squad.id)
+        if (!deleteSuccess) {
+          error('Error al eliminar el voto anterior.', 'Error de Re-votación')
+          return
+        }
+        result = await DatabaseService.submitVote(judgeName, squad.id, scores)
+      } else {
+        // Check if judge has already voted for this squad
+        const hasAlreadyVoted = await DatabaseService.hasJudgeVoted(judgeName, squad.id)
+        if (hasAlreadyVoted) {
+          warning('Ya has votado por este equipo. No puedes votar de nuevo.', 'Ya Votado')
+          onClose()
+          return
+        }
+        result = await DatabaseService.submitVote(judgeName, squad.id, scores)
+      }
       
       if (result) {
-        success(`¡Voto enviado exitosamente para ${squad.name}! Puntaje Total: ${getTotalScore().toFixed(1)}`, 'Voto Enviado')
-        onVoteSubmitted()
+        const actionText = isRevoting ? 'actualizado' : 'enviado'
+        success(`¡Voto ${actionText} exitosamente para ${squad.name}! Puntaje Total: ${getTotalScore().toFixed(1)}`, `Voto ${isRevoting ? 'Actualizado' : 'Enviado'}`)
+        
+        // Force a small delay to ensure database consistency and trigger global refresh
+        setTimeout(() => {
+          forceRefresh()
+          onVoteSubmitted()
+        }, 500)
       } else {
-        error('Error al enviar el voto. Es posible que ya hayas votado por este equipo.', 'Envío Fallido')
+        error(`Error al ${isRevoting ? 'actualizar' : 'enviar'} el voto.`, 'Envío Fallido')
       }
     } catch (err) {
       console.error('Error submitting vote:', err)
-      error('Error al enviar el voto. Por favor intenta de nuevo.', 'Envío Fallido')
+      error(`Error al ${isRevoting ? 'actualizar' : 'enviar'} el voto. Por favor intenta de nuevo.`, 'Envío Fallido')
     } finally {
       setIsSubmitting(false)
     }
@@ -81,7 +116,7 @@ export default function VotingModal({ squad, judgeName, onClose, onVoteSubmitted
           <div className="flex justify-between items-start mb-6 sm:mb-8">
             <div className="flex-1 pr-6">
               <h2 className="text-2xl sm:text-3xl font-light text-slate-900 tracking-tight mb-2">
-                Votar por {squad.name}
+                {isRevoting ? 'Actualizar Voto para' : 'Votar por'} {squad.name}
               </h2>
               <p className="text-slate-600 leading-relaxed">
                 {squad.challenge}
@@ -193,7 +228,7 @@ export default function VotingModal({ squad, judgeName, onClose, onVoteSubmitted
               Cancelar
             </button>
             <button
-              onClick={handleSubmit}
+              onClick={handleSubmitClick}
               disabled={!isFormValid() || isSubmitting}
               className={`px-8 py-2.5 rounded-xl font-medium transition-all duration-200 ${
                 isFormValid() && !isSubmitting
@@ -207,14 +242,22 @@ export default function VotingModal({ squad, judgeName, onClose, onVoteSubmitted
                   <span>Enviando...</span>
                 </div>
               ) : (
-                'Enviar Voto'
+                isRevoting ? 'Actualizar Voto' : 'Enviar Voto'
               )}
             </button>
           </div>
         </div>
       </div>
       
-
+      <ConfirmModal
+        isOpen={showConfirm}
+        title={isRevoting ? "Confirmar Actualización" : "Confirmar Envío"}
+        message={`¿Estás seguro de que quieres ${isRevoting ? 'actualizar tu voto' : 'enviar este voto'} para ${squad.name}? Puntaje total: ${getTotalScore().toFixed(1)}`}
+        confirmText={isRevoting ? "Sí, Actualizar" : "Sí, Enviar"}
+        onConfirm={handleConfirmSubmit}
+        onCancel={() => setShowConfirm(false)}
+        type="warning"
+      />
     </div>
   )
 }

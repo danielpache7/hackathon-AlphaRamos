@@ -4,12 +4,15 @@ import { squads, Squad, CATEGORIES } from '@/config/squads'
 import { useRealTimeJudgeVotes, useRealTimeVotingStatus } from '@/hooks/useRealtime'
 import { Vote } from '@/lib/supabase'
 import { useToast } from '@/contexts/ToastContext'
+import { DatabaseService } from '@/lib/database'
+import { useForceRefreshListener } from '@/hooks/useForceRefresh'
 
 import SquadCard from './SquadCard'
 import VotingModal from './VotingModal'
 import VotingProgress from './VotingProgress'
 import ConnectionStatus from './ConnectionStatus'
 import VoteDetailModal from './VoteDetailModal'
+import ConfirmModal from './ConfirmModal'
 
 interface JudgeInterfaceProps {
   user: User
@@ -19,10 +22,15 @@ export default function JudgeInterface({ user }: JudgeInterfaceProps) {
   const [selectedSquad, setSelectedSquad] = useState<Squad | null>(null)
   const [votedSquads, setVotedSquads] = useState<Set<string>>(new Set())
   const [viewingVote, setViewingVote] = useState<{ squad: Squad; vote: Vote } | null>(null)
-  const { warning } = useToast()
+  const [revotingSquad, setRevotingSquad] = useState<{ squad: Squad; vote: Vote } | null>(null)
+  const [showRevoteConfirm, setShowRevoteConfirm] = useState<{ squad: Squad; vote: Vote } | null>(null)
+  const { warning, success, error } = useToast()
   
   const { votes: judgeVotes, loading: votesLoading, refreshJudgeVotes, lastRefresh } = useRealTimeJudgeVotes(user.name)
   const { votingStatus, loading: statusLoading } = useRealTimeVotingStatus()
+  
+  // Listen for force refresh events
+  useForceRefreshListener(refreshJudgeVotes)
 
   // Update voted squads when votes change
   useEffect(() => {
@@ -40,11 +48,34 @@ export default function JudgeInterface({ user }: JudgeInterfaceProps) {
 
   const handleVoteSubmitted = () => {
     setSelectedSquad(null)
+    setRevotingSquad(null)
     // The real-time hook will automatically update the votes
   }
 
   const handleViewVote = (squad: Squad, vote: Vote) => {
     setViewingVote({ squad, vote })
+  }
+
+  const handleRevoteClick = (squad: Squad) => {
+    if (votingStatus === 'CLOSED') {
+      warning('La votación está actualmente cerrada. No puedes modificar votos.', 'Votación Cerrada')
+      return
+    }
+    const vote = getVoteForSquad(squad.id)
+    if (vote) {
+      setShowRevoteConfirm({ squad, vote })
+    }
+  }
+
+  const handleRevoteConfirm = () => {
+    if (showRevoteConfirm) {
+      setRevotingSquad(showRevoteConfirm)
+      setShowRevoteConfirm(null)
+    }
+  }
+
+  const handleRevoteCancel = () => {
+    setShowRevoteConfirm(null)
   }
 
   const getVoteForSquad = (squadId: string) => {
@@ -56,12 +87,12 @@ export default function JudgeInterface({ user }: JudgeInterfaceProps) {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <div className="h-8 bg-gray-200 rounded w-48 mb-2 animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded w-64 animate-pulse"></div>
+            <div className="h-8 rounded w-48 mb-2 animate-pulse" style={{ backgroundColor: '#F2F2F2' }}></div>
+            <div className="h-4 rounded w-64 animate-pulse" style={{ backgroundColor: '#F2F2F2' }}></div>
           </div>
-          <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
+          <div className="h-6 rounded w-32 animate-pulse" style={{ backgroundColor: '#F2F2F2' }}></div>
         </div>
-        <div className="h-20 bg-gray-200 rounded animate-pulse"></div>
+        <div className="h-20 rounded animate-pulse" style={{ backgroundColor: '#F2F2F2' }}></div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
@@ -85,14 +116,14 @@ export default function JudgeInterface({ user }: JudgeInterfaceProps) {
     <div>
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 space-y-6 lg:space-y-0">
         <div className="flex-1">
-          <h2 className="text-2xl sm:text-3xl font-light text-slate-900 tracking-tight mb-2">
+          <h2 className="text-2xl sm:text-3xl font-light tracking-tight mb-2" style={{ color: '#003366' }}>
             Panel de Juez
           </h2>
-          <p className="text-slate-600 mb-3">
+          <p className="mb-3" style={{ color: '#1A1A1A' }}>
             Bienvenido {user.name}, evalúa los equipos a continuación.
           </p>
           <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 text-sm">
-            <p className="text-slate-400">
+            <p style={{ color: '#1A1A1A', opacity: 0.7 }}>
               Última actualización: {lastRefresh?.toLocaleTimeString('es-ES')}
             </p>
             <div className="mt-2 sm:mt-0">
@@ -108,9 +139,10 @@ export default function JudgeInterface({ user }: JudgeInterfaceProps) {
               disabled={votesLoading}
               className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 text-sm whitespace-nowrap ${
                 votesLoading
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                  : 'bg-slate-900 text-white hover:bg-slate-800'
+                  ? 'cursor-not-allowed opacity-50'
+                  : 'text-white hover:opacity-90'
               }`}
+              style={{ backgroundColor: votesLoading ? '#F2F2F2' : '#009FE3', color: votesLoading ? '#1A1A1A' : 'white' }}
             >
               {votesLoading ? (
                 <div className="flex items-center justify-center space-x-2">
@@ -122,20 +154,20 @@ export default function JudgeInterface({ user }: JudgeInterfaceProps) {
               )}
             </button>
             
-            <div className={`inline-flex items-center justify-center space-x-2 px-3 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
-              votingStatus === 'OPEN' 
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                : 'bg-red-50 text-red-700 border border-red-200'
-            }`}>
-              <div className={`w-2 h-2 rounded-full ${
-                votingStatus === 'OPEN' ? 'bg-emerald-500' : 'bg-red-500'
-              }`}></div>
+            <div className={`inline-flex items-center justify-center space-x-2 px-3 py-2 rounded-full text-sm font-medium whitespace-nowrap border`}
+              style={{
+                backgroundColor: votingStatus === 'OPEN' ? '#A7E100' : '#F2F2F2',
+                color: votingStatus === 'OPEN' ? '#003366' : '#1A1A1A',
+                borderColor: votingStatus === 'OPEN' ? '#A7E100' : '#009FE3'
+              }}>
+              <div className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: votingStatus === 'OPEN' ? '#003366' : '#009FE3' }}></div>
               <span>{votingStatus === 'OPEN' ? 'Votación Abierta' : 'Votación Cerrada'}</span>
             </div>
           </div>
           
           <div className="text-center lg:text-right">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm" style={{ color: '#1A1A1A', opacity: 0.7 }}>
               {votedSquads.size} de {squads.length} equipos votados
             </p>
           </div>
@@ -143,12 +175,12 @@ export default function JudgeInterface({ user }: JudgeInterfaceProps) {
       </div>
 
       {votingStatus === 'CLOSED' && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+        <div className="border rounded-lg p-4 mb-6" style={{ backgroundColor: '#F2F2F2', borderColor: '#009FE3' }}>
           <div className="flex items-center">
-            <div className="text-yellow-600 mr-3">⚠️</div>
+            <div className="mr-3" style={{ color: '#009FE3' }}>⚠️</div>
             <div>
-              <h3 className="text-sm font-medium text-yellow-800">Votación Cerrada</h3>
-              <p className="text-sm text-yellow-700">
+              <h3 className="text-sm font-medium" style={{ color: '#003366' }}>Votación Cerrada</h3>
+              <p className="text-sm" style={{ color: '#1A1A1A' }}>
                 La votación ha sido cerrada por el administrador. Ya no puedes enviar nuevos votos.
               </p>
             </div>
@@ -170,10 +202,10 @@ export default function JudgeInterface({ user }: JudgeInterfaceProps) {
               <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0">
                 <div className="flex items-center space-x-3">
                   <span className="text-2xl">{category.icon}</span>
-                  <h3 className="text-xl font-semibold text-slate-900">{category.name}</h3>
+                  <h3 className="text-xl font-semibold" style={{ color: '#003366' }}>{category.name}</h3>
                 </div>
-                <div className="hidden sm:block flex-1 h-px bg-slate-200 mx-4"></div>
-                <span className="text-sm text-slate-500 sm:whitespace-nowrap">
+                <div className="hidden sm:block flex-1 h-px mx-4" style={{ backgroundColor: '#009FE3' }}></div>
+                <span className="text-sm sm:whitespace-nowrap" style={{ color: '#1A1A1A', opacity: 0.7 }}>
                   {categorySquads.filter(squad => votedSquads.has(squad.id)).length} de {categorySquads.length} votados
                 </span>
               </div>
@@ -187,6 +219,7 @@ export default function JudgeInterface({ user }: JudgeInterfaceProps) {
                     vote={getVoteForSquad(squad.id)}
                     onVote={handleVoteClick}
                     onViewVote={handleViewVote}
+                    onRevote={handleRevoteClick}
                     disabled={votingStatus === 'CLOSED'}
                   />
                 ))}
@@ -205,6 +238,17 @@ export default function JudgeInterface({ user }: JudgeInterfaceProps) {
         />
       )}
 
+      {revotingSquad && (
+        <VotingModal
+          squad={revotingSquad.squad}
+          judgeName={user.name}
+          onClose={() => setRevotingSquad(null)}
+          onVoteSubmitted={handleVoteSubmitted}
+          isRevoting={true}
+          existingVote={revotingSquad.vote}
+        />
+      )}
+
       {viewingVote && (
         <VoteDetailModal
           squad={viewingVote.squad}
@@ -212,6 +256,16 @@ export default function JudgeInterface({ user }: JudgeInterfaceProps) {
           onClose={() => setViewingVote(null)}
         />
       )}
+
+      <ConfirmModal
+        isOpen={!!showRevoteConfirm}
+        title="Confirmar Re-votación"
+        message={`¿Estás seguro de que quieres volver a votar por ${showRevoteConfirm?.squad.name}? Esto eliminará tu voto actual y te permitirá ingresar uno nuevo.`}
+        confirmText="Sí, Volver a Votar"
+        onConfirm={handleRevoteConfirm}
+        onCancel={handleRevoteCancel}
+        type="danger"
+      />
       
 
     </div>
