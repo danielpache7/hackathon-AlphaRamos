@@ -40,19 +40,13 @@ export const evaluationCriteria: Criterion[] = [
     id: 'impact',
     name: 'Potencial de impacto comercial/operativo',
     description: 'Posible impacto en ventas, marca o eficiencia',
-    weight: 10
+    weight: 15
   },
   {
     id: 'communication',
     name: 'Comunicación de la propuesta',
     description: 'Claridad al presentar idea, valor y funcionamiento',
     weight: 10
-  },
-  {
-    id: 'teamwork',
-    name: 'Trabajo en equipo y ejecución',
-    description: 'Organización, colaboración y capacidad para llevar a prototipo funcional',
-    weight: 5
   }
 ]
 

@@ -177,32 +177,44 @@ export function useRealTimeJudgeVotes(judgeName: string) {
   const [votes, setVotes] = useState<Vote[]>([])
   const [loading, setLoading] = useState(true)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+    return () => setIsMounted(false)
+  }, [])
 
   const refreshJudgeVotes = useCallback(async () => {
-    if (!judgeName) return
+    if (!judgeName || !isMounted) return
     setLoading(true)
     try {
       const judgeVotes = await DatabaseService.getVotesByJudge(judgeName)
-      setVotes(judgeVotes)
-      setLastRefresh(new Date())
+      if (isMounted) {
+        setVotes(judgeVotes)
+        setLastRefresh(new Date())
+      }
     } catch (error) {
       console.error('Error refreshing judge votes:', error)
     } finally {
-      setLoading(false)
+      if (isMounted) {
+        setLoading(false)
+      }
     }
-  }, [judgeName])
+  }, [judgeName, isMounted])
 
   const handleJudgeRealtimeUpdate = useCallback(async (payload: any) => {
     console.log('Real-time judge vote update:', payload)
-    if (!judgeName) return
+    if (!judgeName || !isMounted) return
     try {
       const updatedVotes = await DatabaseService.getVotesByJudge(judgeName)
-      setVotes(updatedVotes)
-      setLastRefresh(new Date())
+      if (isMounted) {
+        setVotes(updatedVotes)
+        setLastRefresh(new Date())
+      }
     } catch (error) {
       console.error('Error handling judge realtime update:', error)
     }
-  }, [judgeName])
+  }, [judgeName, isMounted])
 
   useEffect(() => {
     if (!judgeName) return
@@ -213,12 +225,16 @@ export function useRealTimeJudgeVotes(judgeName: string) {
     const initializeData = async () => {
       try {
         const judgeVotes = await DatabaseService.getVotesByJudge(judgeName)
-        setVotes(judgeVotes)
-        setLastRefresh(new Date())
+        if (isMounted) {
+          setVotes(judgeVotes)
+          setLastRefresh(new Date())
+        }
       } catch (error) {
         console.error('Error fetching initial judge votes:', error)
       } finally {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     }
 
@@ -257,7 +273,7 @@ export function useRealTimeJudgeVotes(judgeName: string) {
         clearInterval(autoRefreshInterval)
       }
     }
-  }, [judgeName, handleJudgeRealtimeUpdate])
+  }, [judgeName, handleJudgeRealtimeUpdate, isMounted])
 
   return { votes, loading, refreshJudgeVotes, lastRefresh }
 }
